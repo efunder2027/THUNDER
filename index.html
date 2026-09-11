@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leave — Vacation Day Planner</title>
+<style>
+:root{
+  --bg:#f5f7f4; --card:#fff; --text:#17221d; --muted:#718078;
+  --line:#e3e9e5; --accent:#2f7d62; --accent-soft:#dff0e8;
+  --weekend:#f8faf9; --shadow:0 12px 35px rgba(31,52,43,.08);
+}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);
+font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.app{max-width:1120px;margin:auto;padding:34px 22px 50px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:22px}
+.logo{width:38px;height:38px;border-radius:12px;background:var(--accent);color:white;display:grid;place-items:center}
+.subtitle{color:var(--muted);font-size:14px;margin-top:3px}
+.reset{border:1px solid var(--line);background:white;padding:10px 14px;border-radius:10px;cursor:pointer;color:var(--muted)}
+.grid{display:grid;grid-template-columns:280px 1fr;gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.sidebar{padding:22px;display:flex;flex-direction:column;gap:20px}
+label{font-size:13px;color:var(--muted);font-weight:700;display:block;margin-bottom:8px}
+input[type="number"]{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:17px;outline:none}
+input[type="number"]:focus{border-color:var(--accent)}
+.country-box{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fbfcfb}
+.country-title{font-size:13px;color:var(--muted);font-weight:700;margin-bottom:10px}
+.country-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.country-option{position:relative}
+.country-option input{position:absolute;opacity:0;pointer-events:none}
+.country-option span{display:flex;align-items:center;justify-content:center;min-height:42px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-weight:750;cursor:pointer;background:#fff;transition:.12s}
+.country-option input:checked+span{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.country-note{font-size:11px;color:var(--muted);line-height:1.35;margin-top:9px}
+.stat{padding:18px;border-radius:14px;background:var(--accent-soft)}
+.stat .big{font-size:42px;font-weight:800;line-height:1}.stat p{margin:7px 0 0;color:#47705f;font-size:13px}
+.progress{height:8px;background:#e6ece8;border-radius:10px;overflow:hidden;margin-top:12px}
+.progress>div{height:100%;background:var(--accent);border-radius:10px;width:0}
+.legend{display:grid;gap:9px;font-size:13px;color:var(--muted)}
+.dot{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-2px;margin-right:7px}
+.calendar{padding:22px}
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.cal-title{font-size:21px;font-weight:800}
+.nav{display:flex;gap:7px}.nav button{border:1px solid var(--line);background:white;width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:18px}
+.weekdays,.week-row{display:grid;grid-template-columns:50px repeat(7,1fr) 58px;align-items:center}
+.weekdays div{text-align:center;color:var(--muted);font-size:12px;font-weight:700;padding:8px 0}
+.weekdays .week-label{font-size:10px}
+.weeks{display:grid}
+.week-row{min-height:72px;border-top:1px solid transparent}
+.week-number{text-align:center;color:var(--muted);font-size:12px;font-weight:800}
+.week-toggle{display:flex;align-items:center;justify-content:center}
+.week-check{appearance:none;-webkit-appearance:none;width:24px;height:24px;border:1.5px solid #cbd5cf;border-radius:7px;background:#fff;cursor:pointer;display:grid;place-items:center;transition:.12s}
+.week-check:checked{background:var(--accent);border-color:var(--accent)}
+.week-check:checked::after{content:"✓";color:#fff;font-size:15px;font-weight:900;line-height:1}
+.week-check.indeterminate{background:var(--accent-soft);border-color:var(--accent)}
+.week-check.indeterminate::after{content:"–";color:var(--accent);font-size:17px;font-weight:900;line-height:1}
+.day{aspect-ratio:1/1;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;position:relative}.circle{width:46px;height:46px;border:1.5px solid #cbd5cf;border-radius:50%;display:grid;place-items:center;font-weight:750;font-size:14px;transition:.12s}.day:hover .circle{border-color:var(--accent);background:#f1f7f4}.day.weekend .circle{border-color:#e1e6e3;color:#9aa49e;background:#fafbfa}.day.selected .circle{background:var(--accent);border-color:var(--accent);color:white;box-shadow:0 4px 10px #2f7d6030}
+.day.holiday{cursor:default}
+.day.holiday .circle{background:#fff3dc;border-color:#e6b85c;color:#8a5a00;box-shadow:none}
+.day.holiday .circle::after{content:"";position:absolute;width:6px;height:6px;border-radius:50%;background:#d79012;transform:translate(15px,-15px)}
+.day.holiday:hover .circle{background:#fff3dc;border-color:#e6b85c}
+.day.empty{cursor:default}.day.empty .circle{visibility:hidden}
+
+.num{font-weight:700;font-size:14px}
+.hint{margin-top:14px;color:var(--muted);font-size:12px;text-align:center}
+@media(max-width:780px){.grid{grid-template-columns:1fr}.sidebar{display:grid;grid-template-columns:1fr 1fr}.stat{grid-column:1/-1}.legend{display:none}.weekdays,.week-row{grid-template-columns:38px repeat(7,1fr) 44px}.week-row{min-height:58px}.day{min-height:48px}.circle{width:39px;height:39px}.week-check{width:22px;height:22px}.app{padding:20px 12px 35px}.calendar,.sidebar{padding:16px}}
+@media(max-width:460px){.sidebar{grid-template-columns:1fr}.cal-head{margin-bottom:10px}.weekdays,.week-row{grid-template-columns:30px repeat(7,1fr) 34px}.week-row{min-height:50px}.day{min-height:44px;padding:1px}.circle{width:32px;height:32px;font-size:11px}.weekdays div{font-size:9px}.weekdays .week-label{font-size:8px}.week-number{font-size:10px}.week-check{width:20px;height:20px;border-radius:6px}}
+
+/* Week-number emphasis: Denmark only */
+.week-number{
+  font-size:13px;
+  transition:font-size .15s ease, font-weight .15s ease;
+}
+body.country-dk .week-number{
+  font-size:39px;
+  font-weight:800;
+  line-height:1;
+}
+
+
+/* Main view navigation */
+.top-tabs{
+  display:flex;
+  gap:8px;
+  margin:0 0 16px;
+  flex-wrap:wrap;
+}
+.top-tab{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--text);
+  border-radius:999px;
+  padding:10px 16px;
+  font:inherit;
+  font-weight:800;
+  cursor:pointer;
+}
+.top-tab.active{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+.view-panel[hidden]{display:none!important}
+
+/* Six-month year overview */
+.year-overview{
+  padding:22px;
+}
+.overview-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.overview-year-nav{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.overview-year{
+  min-width:84px;
+  text-align:center;
+  font-size:24px;
+  font-weight:850;
+}
+.overview-half-tabs{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.half-tab,.print-btn{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--text);
+  border-radius:10px;
+  padding:9px 13px;
+  font:inherit;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+}
+.half-tab.active{
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  color:var(--accent);
+}
+.overview-heading{
+  margin:0 0 12px;
+  font-size:18px;
+  font-weight:850;
+}
+.overview-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+.mini-month{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background:#fff;
+  break-inside:avoid;
+}
+.mini-month-title{
+  text-align:center;
+  font-size:15px;
+  font-weight:850;
+  margin-bottom:8px;
+}
+.mini-head,.mini-week{
+  display:grid;
+  grid-template-columns:34px repeat(7,minmax(0,1fr));
+  align-items:center;
+}
+.mini-head{
+  color:var(--muted);
+  font-size:9px;
+  font-weight:800;
+  text-align:center;
+  margin-bottom:3px;
+}
+.mini-week-no{
+  text-align:center;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+}
+body.country-dk .mini-week-no{
+  font-size:16px;
+  color:var(--text);
+  font-weight:900;
+}
+.mini-day{
+  width:100%;
+  aspect-ratio:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  font-size:9px;
+}
+.mini-day.outside{visibility:hidden}
+.mini-day.selected{
+  background:var(--accent);
+  color:#fff;
+  font-weight:850;
+}
+.mini-day.holiday{
+  background:#fff3dc;
+  color:#8a5a00;
+  box-shadow:inset 0 0 0 1px #e6b85c;
+  font-weight:850;
+}
+.overview-legend{
+  display:flex;
+  gap:14px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-top:12px;
+  color:var(--muted);
+  font-size:11px;
+}
+.legend-dot{
+  display:inline-block;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  margin-right:5px;
+  vertical-align:-1px;
+}
+.legend-dot.vac{background:var(--accent)}
+.legend-dot.hol{background:#fff3dc;border:1px solid #e6b85c}
+
+@media(max-width:900px){
+  .overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  .overview-grid{grid-template-columns:1fr}
+}
+
+@media print{
+  body.print-overview *{
+    visibility:hidden!important;
+  }
+  body.print-overview #overviewPanel,
+  body.print-overview #overviewPanel *{
+    visibility:visible!important;
+  }
+  body.print-overview #overviewPanel{
+    display:block!important;
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    padding:0;
+    margin:0;
+    border:0;
+    box-shadow:none;
+  }
+  body.print-overview .overview-toolbar{
+    display:none!important;
+  }
+  body.print-overview .overview-grid{
+    grid-template-columns:repeat(3,1fr)!important;
+    gap:7mm;
+  }
+  body.print-overview .mini-month{
+    border:1px solid #999;
+    box-shadow:none;
+  }
+}
+
+
+/* Overview refinements */
+.mini-week{
+  position:relative;
+  padding-top:3px;
+}
+.mini-week-no{
+  position:absolute;
+  left:0;
+  top:0;
+  width:30px;
+  text-align:left;
+  padding-left:2px;
+  line-height:1;
+}
+.mini-week{
+  grid-template-columns:34px repeat(7,minmax(0,1fr));
+}
+.mini-day.weekend{
+  background:#f2f3f5;
+  color:#5f6368;
+}
+.mini-day.weekend.selected{
+  background:var(--accent);
+  color:#fff;
+}
+.mini-day.weekend.holiday{
+  background:#fff3dc;
+  color:#8a5a00;
+}
+.download-btn{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--text);
+  border-radius:10px;
+  padding:9px 14px;
+  font:inherit;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+}
+.overview-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+@media print{
+  body.print-overview .overview-actions{display:none!important}
+}
+
+
+/* Compact six-month table overview */
+.overview-grid{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:0;
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+}
+.month-column{min-width:0;border-right:1px solid var(--line);background:#fff}
+.month-column:last-child{border-right:0}
+.month-column-title{
+  text-align:center;font-size:15px;font-weight:850;padding:10px 5px;
+  border-bottom:1px solid var(--line);background:#fff
+}
+.month-days{display:flex;flex-direction:column}
+.month-day-row{
+  min-height:26px;display:grid;grid-template-columns:24px 24px minmax(0,1fr);
+  align-items:center;border-bottom:1px solid #e8e9eb;font-size:11px;position:relative
+}
+.month-day-row.weekend{background:#f0f1f2}
+.month-day-row.holiday{background:#fff3dc}
+.month-day-row.selected{background:#e3f1ea;box-shadow:inset 3px 0 0 var(--accent)}
+.month-day-row.selected.weekend{background:#dfeae5}
+.day-letter{text-align:center;font-weight:750;color:#5e6268}
+.day-number{font-weight:750}
+.day-label{min-width:0;padding-right:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.week-badge{
+  position:absolute;left:2px;top:-8px;z-index:2;min-width:22px;height:16px;
+  display:flex;align-items:center;justify-content:center;border-radius:6px;
+  background:#fff;border:1px solid var(--line);font-size:9px;font-weight:850;
+  color:var(--muted);box-shadow:0 1px 2px #00000010
+}
+body.country-dk .week-badge{font-size:11px;font-weight:900}
+.month-spacer{min-height:26px;border-bottom:1px solid #f3f3f3;background:#fafafa}
+.legend-dot.weekend-dot{background:#f0f1f2;border:1px solid #d8dadd}
+@media(max-width:1050px){
+  .overview-grid{overflow-x:auto;grid-template-columns:repeat(6,180px)}
+}
+@media print{
+  body.print-overview .overview-grid{grid-template-columns:repeat(6,1fr)!important;gap:0!important;overflow:visible}
+  body.print-overview .month-day-row{min-height:20px;grid-template-columns:18px 18px minmax(0,1fr);font-size:8px}
+  body.print-overview .month-column-title{font-size:12px;padding:6px 3px}
+  body.print-overview .week-badge{font-size:7px;height:13px;min-width:18px;top:-6px}
+}
+
+/* v9: simpler six-month overview */
+.overview-grid{
+  grid-template-columns:repeat(6,minmax(150px,1fr));
+  border:1px solid #b8bcc2;
+  border-radius:0;
+}
+.month-column{
+  border-right:1px solid #b8bcc2;
+}
+.month-column-title{
+  font-size:16px;
+  font-weight:800;
+  padding:8px 4px;
+  border-bottom:1px solid #b8bcc2;
+  white-space:nowrap;
+}
+.month-day-row{
+  min-height:28px;
+  grid-template-columns:24px 34px minmax(0,1fr);
+  border-bottom:1px solid #cfd2d6;
+  font-size:12px;
+  padding:0 4px;
+  box-shadow:none!important;
+}
+.month-day-row.weekend{
+  background:#ececec;
+}
+.month-day-row.holiday{
+  background:#f7eed8;
+}
+.month-day-row.selected{
+  background:#dfeee7;
+}
+.month-day-row.selected.weekend{
+  background:#d9e6e0;
+}
+.month-day-row.selected.holiday{
+  background:#e8e7cf;
+}
+.day-letter{
+  text-align:left;
+  font-weight:700;
+  color:#3f4348;
+}
+.day-number{
+  font-weight:600;
+  text-align:left;
+}
+.day-label{
+  display:none;
+}
+.week-badge{
+  position:static;
+  justify-self:end;
+  min-width:auto;
+  height:auto;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:#111;
+  font-size:11px;
+  font-weight:800;
+  line-height:1;
+}
+body.country-dk .week-badge{
+  font-size:9px;
+}
+.month-spacer{
+  min-height:28px;
+  border-bottom:1px solid #eef0f2;
+  background:#fff;
+}
+@media(max-width:1050px){
+  .overview-grid{
+    grid-template-columns:repeat(6,160px);
+  }
+}
+@media print{
+  body.print-overview .overview-grid{
+    grid-template-columns:repeat(6,1fr)!important;
+    border:1px solid #777;
+  }
+  body.print-overview .month-column-title{
+    font-size:11px;
+    padding:4px 2px;
+  }
+  body.print-overview .month-day-row{
+    min-height:19px;
+    grid-template-columns:16px 20px minmax(0,1fr);
+    font-size:8px;
+    padding:0 2px;
+  }
+  body.print-overview .month-spacer{
+    min-height:19px;
+  }
+  body.print-overview .week-badge{
+    font-size:8px;
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div>
+    <div class="brand"><div class="logo">✓</div><div>Leave<span style="color:var(--accent)">.</span><div class="subtitle">Your simple vacation day tracker</div></div></div>
+  </div>
+  <button class="reset" id="reset">Reset</button>
+</header>
+
+
+<div class="top-tabs" aria-label="Main views">
+  <button class="top-tab active" id="plannerTab" type="button">Vacation planner</button>
+  <button class="top-tab" id="overviewTab" type="button">Year overview</button>
+</div>
+
+<div id="plannerPanel" class="view-panel">
+<div class="grid">
+  <aside class="card sidebar">
+    <div class="country-box">
+      <div class="country-title">Public holidays</div>
+      <div class="country-options">
+        <label class="country-option">
+          <input type="radio" name="country" value="DK" id="countryDK">
+          <span>🇩🇰 Denmark</span>
+        </label>
+        <label class="country-option">
+          <input type="radio" name="country" value="NONE" id="countryNone">
+          <span>None</span>
+        </label>
+      </div>
+      <div class="country-note">Denmark marks nationwide public holidays automatically. They do not use vacation days.</div>
+    </div>
+    <div>
+      <label for="allowance">Vacation days available</label>
+      <input id="allowance" type="number" min="0" step="0.5" value="30">
+    </div>
+    <div class="stat">
+      <div class="big" id="remaining">25</div>
+      <p>days remaining</p>
+      <div class="progress"><div id="bar"></div></div>
+    </div>
+    <div class="summary">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Vacation days used</div>
+      <div style="font-size:24px;font-weight:800"><strong id="used">0</strong></div>
+    </div>
+    <div class="summary">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Days still needed</div>
+      <div style="font-size:24px;font-weight:800"><strong id="needed">30</strong></div>
+    </div>
+    <div class="summary">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Above allowance</div>
+      <div style="font-size:24px;font-weight:800"><strong id="extra">0</strong></div>
+    </div>
+    <div id="status" style="font-size:13px;color:var(--muted);line-height:1.4">You still need to select 30 vacation days.</div>
+  </aside>
+
+  <main class="card calendar">
+    <div class="cal-head">
+      <div class="cal-title" id="monthTitle"></div>
+      <div class="nav"><button id="prev" aria-label="Previous month">‹</button><button id="next" aria-label="Next month">›</button></div>
+    </div>
+    <div class="weekdays">
+      <div class="week-label">WEEK</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div><div class="week-label">ALL</div>
+    </div>
+    <div class="weeks" id="days"></div>
+    <div class="hint">Click a day to toggle it, or use the checkbox on the right to select Monday–Friday for the whole week. Danish public holidays are shown in amber and are skipped automatically.</div>
+  </main>
+</div>
+
+</div><!-- /plannerPanel -->
+
+<section id="overviewPanel" class="card year-overview view-panel" hidden>
+  <div class="overview-toolbar">
+    <div class="overview-year-nav">
+      <button class="navbtn" id="overviewPrevYear" type="button" aria-label="Previous year">‹</button>
+      <div class="overview-year" id="overviewYear"></div>
+      <button class="navbtn" id="overviewNextYear" type="button" aria-label="Next year">›</button>
+    </div>
+
+    <div class="overview-half-tabs" aria-label="Half-year overview">
+      <button class="half-tab active" id="half1Tab" type="button">Months 1–6</button>
+      <button class="half-tab" id="half2Tab" type="button">Months 7–12</button>
+    </div>
+
+    <div class="overview-actions">
+      <button class="print-btn" id="printOverview" type="button">Print this 6-month overview</button>
+      <button class="download-btn" id="downloadOverview" type="button">Download printable version</button>
+    </div>
+  </div>
+
+  <h2 class="overview-heading" id="overviewRangeTitle"></h2>
+  <div class="overview-grid" id="overviewGrid"></div>
+
+  <div class="overview-legend">
+    <span><span class="legend-dot vac"></span>Vacation day</span>
+    <span><span class="legend-dot hol"></span>Public holiday</span>
+    <span><span class="legend-dot weekend-dot"></span>Weekend</span><span>Week number appears once at the start of each week.</span>
+  </div>
+</section>
+
+</div>
+
+<script>
+const stateKey="leave-vacation-v2";
+let saved=JSON.parse(localStorage.getItem(stateKey)||'{}');
+let allowance=Number(saved.allowance ?? 30);
+let selected=new Set(saved.selected||[]);
+let country=saved.country || "DK";
+let view=new Date(); view.setDate(1);
+let overviewYear=view.getFullYear();
+let overviewHalf=1;
+
+const $=id=>document.getElementById(id);
+$("allowance").value=allowance;
+(country==="DK"?$("countryDK"):$("countryNone")).checked=true;
+
+function persist(){
+  localStorage.setItem(stateKey,JSON.stringify({allowance,selected:[...selected],country}));
+}
+function updateCountryStyle(){
+  document.body.classList.toggle("country-dk", country==="DK");
+}
+function isoDate(date){
+  const y=date.getFullYear(),m=date.getMonth()+1,d=date.getDate();
+  return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+function dateFromIso(iso){
+  return new Date(iso+"T12:00:00");
+}
+
+/* Gregorian Easter Sunday */
+function easterSunday(year){
+  const a=year%19;
+  const b=Math.floor(year/100);
+  const c=year%100;
+  const d=Math.floor(b/4);
+  const e=b%4;
+  const f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3);
+  const h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4);
+  const k=c%4;
+  const l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31)-1;
+  const day=((h+l-7*m+114)%31)+1;
+  return new Date(year,month,day,12,0,0);
+}
+function addDays(date,n){
+  const d=new Date(date); d.setDate(d.getDate()+n); return d;
+}
+function denmarkHolidays(year){
+  const easter=easterSunday(year);
+  const holidays=new Map();
+  const add=(date,name)=>holidays.set(isoDate(date),name);
+
+  add(new Date(year,0,1,12),"New Year's Day");
+  add(addDays(easter,-3),"Maundy Thursday");
+  add(addDays(easter,-2),"Good Friday");
+  add(easter,"Easter Sunday");
+  add(addDays(easter,1),"Easter Monday");
+  add(addDays(easter,39),"Ascension Day");
+  add(addDays(easter,49),"Whit Sunday");
+  add(addDays(easter,50),"Whit Monday");
+  add(new Date(year,11,25,12),"Christmas Day");
+  add(new Date(year,11,26,12),"Boxing Day");
+  return holidays;
+}
+const holidayCache=new Map();
+function holidayName(date){
+  if(country!=="DK") return null;
+  const y=date.getFullYear();
+  if(!holidayCache.has(y)) holidayCache.set(y,denmarkHolidays(y));
+  return holidayCache.get(y).get(isoDate(date)) || null;
+}
+function isPublicHolidayDate(date){
+  return !!holidayName(date);
+}
+function effectiveSelectedCount(){
+  let count=0;
+  for(const iso of selected){
+    const d=dateFromIso(iso);
+    if(country==="DK" && isPublicHolidayDate(d)) continue;
+    count++;
+  }
+  return count;
+}
+function updateStats(){
+  const used=effectiveSelectedCount(), remaining=allowance-used;
+  $("used").textContent=used;
+  $("remaining").textContent=Math.max(0,remaining);
+  $("needed").textContent=Math.max(0,remaining);
+  $("extra").textContent=Math.max(0,-remaining);
+  $("bar").style.width=`${allowance?Math.min(100,(used/allowance)*100):0}%`;
+  const status=$("status");
+  if(remaining>0) status.textContent=`You still need to select ${remaining} vacation day${remaining===1?"":"s"}.`;
+  else if(remaining<0) status.textContent=`You have selected ${-remaining} day${remaining===-1?"":"s"} above your allowance.`;
+  else status.textContent="All vacation days have been allocated.";
+}
+function isoWeekNumber(date){
+  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  const dayNum=d.getUTCDay()||7;
+  d.setUTCDate(d.getUTCDate()+4-dayNum);
+  const yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d-yearStart)/86400000)+1)/7);
+}
+function startOfWeek(date){
+  const d=new Date(date);
+  const day=(d.getDay()+6)%7;
+  d.setDate(d.getDate()-day);
+  d.setHours(12,0,0,0);
+  return d;
+}
+function weekVacationDates(monday){
+  const dates=[];
+  for(let i=0;i<5;i++){
+    const d=new Date(monday);
+    d.setDate(monday.getDate()+i);
+    if(!isPublicHolidayDate(d)) dates.push(isoDate(d));
+  }
+  return dates;
+}
+
+function renderOverview(){
+  $("overviewYear").textContent=overviewYear;
+  $("half1Tab").classList.toggle("active",overviewHalf===1);
+  $("half2Tab").classList.toggle("active",overviewHalf===2);
+
+  const firstMonth=overviewHalf===1?0:6;
+  $("overviewRangeTitle").textContent=
+    `${overviewHalf===1?"Months 1–6 · January–June":"Months 7–12 · July–December"} ${overviewYear}`;
+
+  const monthFormatter=new Intl.DateTimeFormat("en-US",{month:"long"});
+  const weekdayLetters=["Su","Mo","Tu","We","Th","Fr","Sa"];
+  let output="";
+
+  for(let month=firstMonth; month<firstMonth+6; month++){
+    const daysInMonth=new Date(overviewYear,month+1,0).getDate();
+    let rows="";
+
+    for(let day=1; day<=31; day++){
+      if(day>daysInMonth){
+        rows+=`<div class="month-spacer"></div>`;
+        continue;
+      }
+
+      const date=new Date(overviewYear,month,day,12);
+      const iso=isoDate(date);
+      const holiday=holidayName(date);
+      const weekend=(date.getDay()===0||date.getDay()===6);
+      const isSelected=selected.has(iso) && !holiday;
+      const isMonday=date.getDay()===1;
+
+      const classes=[
+        "month-day-row",
+        weekend?"weekend":"",
+        holiday?"holiday":"",
+        isSelected?"selected":""
+      ].filter(Boolean).join(" ");
+
+      rows+=`
+        <div class="${classes}" title="${iso}">
+          <div class="day-letter">${weekdayLetters[date.getDay()]}</div>
+          <div class="day-number">${day}</div>
+          ${isMonday ? `<div class="week-badge" title="Week ${isoWeekNumber(date)}">${isoWeekNumber(date)}</div>` : `<div></div>`}
+        </div>`;
+    }
+
+    output+=`
+      <section class="month-column">
+        <div class="month-column-title">${monthFormatter.format(new Date(overviewYear,month,1))} ${overviewYear}</div>
+        <div class="month-days">${rows}</div>
+      </section>`;
+  }
+
+  $("overviewGrid").innerHTML=output;
+}
+
+function setMainView(viewName){
+  const showPlanner=viewName==="planner";
+  $("plannerPanel").hidden=!showPlanner;
+  $("overviewPanel").hidden=showPlanner;
+  $("plannerTab").classList.toggle("active",showPlanner);
+  $("overviewTab").classList.toggle("active",!showPlanner);
+
+  if(!showPlanner){
+    overviewYear=view.getFullYear();
+    renderOverview();
+  }
+}
+
+function render(){
+  const y=view.getFullYear(),m=view.getMonth();
+  $("monthTitle").textContent=new Intl.DateTimeFormat("en-US",{month:"long",year:"numeric"}).format(view);
+  const first=new Date(y,m,1), last=new Date(y,m+1,0);
+  const firstMonday=startOfWeek(first);
+  const lastMonday=startOfWeek(last);
+  const today=new Date();
+  let rows="";
+  for(let monday=new Date(firstMonday); monday<=lastMonday; monday.setDate(monday.getDate()+7)){
+    const mondayCopy=new Date(monday);
+    const vacationDates=weekVacationDates(mondayCopy);
+    const selectedCount=vacationDates.filter(d=>selected.has(d)).length;
+    const checked=vacationDates.length>0 && selectedCount===vacationDates.length;
+    const partial=selectedCount>0&&selectedCount<vacationDates.length;
+    let days="";
+    for(let i=0;i<7;i++){
+      const date=new Date(mondayCopy); date.setDate(mondayCopy.getDate()+i);
+      const inMonth=date.getMonth()===m && date.getFullYear()===y;
+      if(!inMonth){days+=`<button class="day empty" tabindex="-1" aria-hidden="true"><span class="circle"></span></button>`;continue;}
+      const iso=isoDate(date);
+      const weekend=i>=5;
+      const isToday=date.toDateString()===today.toDateString();
+      const holiday=holidayName(date);
+      const isSelected=selected.has(iso) && !holiday;
+      const cls=`day ${weekend?'weekend ':''}${isToday?'today ':''}${holiday?'holiday ':''}${isSelected?'selected':''}`;
+      const label=holiday ? `${iso} — ${holiday}, public holiday` : iso;
+      days+=`<button class="${cls}" ${holiday?'disabled':''} data-date="${iso}" aria-label="${label}" title="${holiday||''}"><span class="circle">${date.getDate()}</span></button>`;
+    }
+    const disabled=vacationDates.length===0;
+    rows+=`<div class="week-row"><div class="week-number" title="Week ${isoWeekNumber(mondayCopy)}">W${isoWeekNumber(mondayCopy)}</div>${days}<div class="week-toggle"><input class="week-check ${partial?'indeterminate':''}" type="checkbox" data-week="${isoDate(mondayCopy)}" ${checked?'checked':''} ${disabled?'disabled':''} aria-label="Select working vacation days in week ${isoWeekNumber(mondayCopy)}"></div></div>`;
+  }
+  $("days").innerHTML=rows;
+
+  document.querySelectorAll(".day[data-date]:not(.holiday)").forEach(btn=>{
+    btn.onclick=()=>{
+      const date=btn.dataset.date;
+      if(selected.has(date)) selected.delete(date); else selected.add(date);
+      persist();render();updateStats();renderOverview();
+    };
+  });
+  document.querySelectorAll(".week-check").forEach(box=>{
+    box.indeterminate=box.classList.contains("indeterminate");
+    box.onchange=()=>{
+      const monday=dateFromIso(box.dataset.week);
+      const dates=weekVacationDates(monday);
+      const allSelected=dates.length>0 && dates.every(d=>selected.has(d));
+      dates.forEach(d=>allSelected?selected.delete(d):selected.add(d));
+      persist();render();updateStats();renderOverview();
+    };
+  });
+}
+$("allowance").oninput=e=>{
+  allowance=Math.max(0,Number(e.target.value)||0);persist();updateStats();
+};
+document.querySelectorAll('input[name="country"]').forEach(radio=>{
+  radio.onchange=e=>{
+    country=e.target.value;
+    updateCountryStyle();
+    persist();
+    render();
+    updateStats();
+    renderOverview();
+  };
+});
+$("prev").onclick=()=>{view.setMonth(view.getMonth()-1);render()};
+$("next").onclick=()=>{view.setMonth(view.getMonth()+1);render()};
+$("reset").onclick=()=>{
+  if(confirm("Clear all marked vacation days and reset the allowance to 30?")){
+    allowance=30;
+    selected=new Set();
+    country="DK";
+    $("allowance").value=30;
+    $("countryDK").checked=true;
+    updateCountryStyle();
+    persist();render();updateStats();renderOverview();
+  }
+};
+
+
+function buildPrintableOverviewHtml(){
+  const rangeText=overviewHalf===1?"Months 1–6 · January–June":"Months 7–12 · July–December";
+  const title=`Vacation overview — ${rangeText} ${overviewYear}`;
+  const overviewClone=$("overviewGrid").cloneNode(true);
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title}</title>
+<style>
+@page{size:A4 landscape;margin:8mm}
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;color:#202124;margin:0;background:#fff}
+h1{font-size:16px;margin:0 0 3mm}
+.overview-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:0;border:1px solid #777}
+.month-column{border-right:1px solid #777;min-width:0}
+.month-column:last-child{border-right:0}
+.month-column-title{text-align:center;font-size:10px;font-weight:700;padding:4px 2px;border-bottom:1px solid #777;white-space:nowrap}
+.month-day-row{min-height:19px;display:grid;grid-template-columns:16px 20px minmax(0,1fr);align-items:center;border-bottom:1px solid #ccc;font-size:8px;padding:0 2px}
+.month-spacer{min-height:19px;border-bottom:1px solid #eee}
+.month-day-row.weekend{background:#ececec}
+.month-day-row.holiday{background:#f7eed8}
+.month-day-row.selected{background:#dfeee7}
+.day-letter{text-align:left;font-weight:700}.day-number{font-weight:600}
+.week-badge{justify-self:end;font-size:8px;font-weight:700}
+</style>
+</head>
+<body>
+<h1>${title}</h1>
+<div class="overview-grid">${overviewClone.innerHTML}</div>
+</body>
+</html>`;
+}
+
+function downloadPrintableOverview(){
+  const htmlText=buildPrintableOverviewHtml();
+  const blob=new Blob([htmlText],{type:"text/html;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const half=overviewHalf===1?"months-1-6":"months-7-12";
+  a.href=url;
+  a.download=`vacation-overview-${overviewYear}-${half}.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),0);
+}
+
+$("plannerTab").onclick=()=>setMainView("planner");
+$("overviewTab").onclick=()=>setMainView("overview");
+
+$("half1Tab").onclick=()=>{
+  overviewHalf=1;
+  renderOverview();
+};
+$("half2Tab").onclick=()=>{
+  overviewHalf=2;
+  renderOverview();
+};
+$("overviewPrevYear").onclick=()=>{
+  overviewYear--;
+  renderOverview();
+};
+$("overviewNextYear").onclick=()=>{
+  overviewYear++;
+  renderOverview();
+};
+
+$("printOverview").onclick=()=>{
+  document.body.classList.add("print-overview");
+  window.print();
+};
+$("downloadOverview").onclick=downloadPrintableOverview;
+window.addEventListener("afterprint",()=>{
+  document.body.classList.remove("print-overview");
+});
+
+updateCountryStyle();render();updateStats();renderOverview();
+</script>
+</body>
+</html>
